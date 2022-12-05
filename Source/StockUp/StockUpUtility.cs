@@ -123,7 +123,9 @@ namespace SmartMedicine
 			if (!EnoughAvailable(thingDef, pawn.Map))
 				return Mod.settings.stockUpReturn ? -invCount : 0;
 
-			return capacity - invCount;
+			if (invCount > 0) return 0;
+
+			return capacity;
 		}
 
 		public static int StockUpWants(this Pawn pawn, Thing thing) => pawn.StockUpWants(thing.def);
@@ -132,7 +134,12 @@ namespace SmartMedicine
 		{
 			if (!pawn.StockingUpOn(thingDef)) return 0;
 
-			return pawn.StockUpCount(thingDef) - pawn.HasItemCount(thingDef);
+			int desiredStock = pawn.StockUpCount(thingDef);
+			int missingStock = desiredStock - pawn.HasItemCount(thingDef);
+
+			if (missingStock != desiredStock) return 0;
+
+			return desiredStock;
 		}
 
 		public static int HasItemCount(this Pawn pawn, ThingDef thingDef)

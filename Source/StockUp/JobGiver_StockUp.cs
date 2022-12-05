@@ -18,7 +18,10 @@ namespace SmartMedicine
 
 	public class JobGiver_StockUp : ThinkNode_JobGiver
 	{
-		public static bool Skip(Pawn pawn)
+
+			public static Dictionary<Pawn, int> lastStockCheck = new Dictionary<Pawn, int>();
+
+			public static bool Skip(Pawn pawn)
 		{
 			if (pawn.inventory.UnloadEverything)
 				return true;
@@ -34,33 +37,61 @@ namespace SmartMedicine
 		}
 		protected override Job TryGiveJob(Pawn pawn)
 		{
+
+
+			int currentHour = GenLocalDate.HourOfDay(pawn.Map);
+			try
+			{
+				if (lastStockCheck[pawn] != currentHour)
+				{
+					lastStockCheck[pawn] = currentHour;
+				}
+				else
+				{
+					return null;
+				}
+			}
+			catch (KeyNotFoundException)
+			{
+				Log.Message($"Adding {pawn} to dictionary");
+				lastStockCheck.Add(pawn, currentHour);
+			}
+
+			
 			if (pawn.StockUpIsFull()) return null;
-			Log.Message($"{pawn} needs stocking up");
+			if (Skip(pawn)) return null;
 
-			if (Skip(pawn))
-				return null;
+			Log.Message($"{currentHour}:00 - {pawn} needs stocking up. ");
 
-			Log.Message($"any things?");
 			Predicate<Thing> validator = (Thing t) => pawn.StockingUpOn(t) && pawn.StockUpNeeds(t) > 0 && pawn.CanReserve(t, FindBestMedicine.maxPawns, 1) && !t.IsForbidden(pawn);
 			Thing thing = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.HaulableEver), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 9999, validator);
 			if (thing != null)
 			{
 				int pickupCount = Math.Min(pawn.StockUpNeeds(thing), MassUtility.CountToPickUpUntilOverEncumbered(pawn, thing));
-				Log.Message($"{pawn} stock thing is {thing}, count {pickupCount}");
 				if (pickupCount > 0)
+					Log.Message($"{pawn} stocking up on {pickupCount} {thing}");
 					return new Job(SmartMedicineJobDefOf.StockUp, thing) { count = pickupCount};
 			}
 
-			Log.Message($"{pawn} looking to return");
+			/*
+
 			Thing toReturn = pawn.StockUpThingToReturn();
-			if (toReturn == null) return null;
-			Log.Message($"returning {toReturn}");
+
+			if (toReturn == null)
+			{
+				Log.Message($"{pawn} has nothing to return");
+				return null;
+			}
+				
+			Log.Message($"{pawn} looking to return {toReturn.LabelShort}");
 
 			int dropCount = -pawn.StockUpNeeds(toReturn);
-			Log.Message($"dropping {dropCount}");
+			Log.Message($"{pawn} dropping {dropCount} {toReturn.LabelShort}");
 			if (StoreUtility.TryFindBestBetterStoreCellFor(toReturn, pawn, pawn.Map, StoragePriority.Unstored, pawn.Faction, out IntVec3 dropLoc, true))
 				return new Job(SmartMedicineJobDefOf.StockDown, toReturn, dropLoc) { count = dropCount };
-			Log.Message($"nowhere to store");
+			Log.Message($"{pawn} has nowhere to store {toReturn.LabelShort}");
+
+			*/
 			return null;
 		}
 	}

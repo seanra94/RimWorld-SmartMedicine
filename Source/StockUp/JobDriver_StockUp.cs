@@ -42,12 +42,14 @@ namespace SmartMedicine
 					int startCarryCount = Mathf.Min(dropCount - carriedCount, canCarryCount);
 					if (startCarryCount == 0)
 					{
+						Log.Message($"(1) Ending job for {pawn}");
 						actor.jobs.EndCurrentJob(JobCondition.Incompletable);
 						return;
 					}
 					int carried = actor.carryTracker.TryStartCarry(thing, startCarryCount);
 					if (carried == 0)
 					{
+						Log.Message($"(1) Ending job for {pawn}");
 						actor.jobs.EndCurrentJob(JobCondition.Incompletable);
 					}
 					job.count -= carried;
