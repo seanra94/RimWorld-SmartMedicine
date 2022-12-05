@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,8 +19,9 @@ namespace SmartMedicine
 	public class JobGiver_StockUp : ThinkNode_JobGiver
 	{
 
-		public static Dictionary<Pawn, int> lastStockCheck = new Dictionary<Pawn, int>();
-		public static bool Skip(Pawn pawn)
+			public static Dictionary<Pawn, int> lastStockCheck = new Dictionary<Pawn, int>();
+
+			public static bool Skip(Pawn pawn)
 		{
 			if (pawn.inventory.UnloadEverything)
 				return true;
@@ -36,7 +37,7 @@ namespace SmartMedicine
 		}
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			if (pawn.StockUpIsFull()) return null;
+
 
 			int currentHour = GenLocalDate.HourOfDay(pawn.Map);
 			try
@@ -55,14 +56,13 @@ namespace SmartMedicine
 				Log.Message($"Adding {pawn} to dictionary");
 				lastStockCheck.Add(pawn, currentHour);
 			}
-			
-			
-			if (Skip(pawn))
-				return null;
 
-			Log.Message($"{GenLocalDate.HourOfDay(pawn.Map)}: {pawn} needs stocking up");
+			
+			if (pawn.StockUpIsFull()) return null;
+			if (Skip(pawn)) return null;
 
-			Log.Message($"Checking if any stock available for {pawn}");
+			Log.Message($"{currentHour}:00 - {pawn} needs stocking up. ");
+
 			Predicate<Thing> validator = (Thing t) => pawn.StockingUpOn(t) && pawn.StockUpNeeds(t) > 0 && pawn.CanReserve(t, FindBestMedicine.maxPawns, 1) && !t.IsForbidden(pawn);
 			Thing thing = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.HaulableEver), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 9999, validator);
 			if (thing != null)
@@ -70,12 +70,12 @@ namespace SmartMedicine
 				int pickupCount = Math.Min(pawn.StockUpNeeds(thing), MassUtility.CountToPickUpUntilOverEncumbered(pawn, thing));
 				if (pickupCount > 0)
 					Log.Message($"{pawn} stocking up on {pickupCount} {thing}");
-				return new Job(SmartMedicineJobDefOf.StockUp, thing) { count = pickupCount};
+					return new Job(SmartMedicineJobDefOf.StockUp, thing) { count = pickupCount};
 			}
 
-			
-			Thing toReturn = pawn.StockUpThingToReturn();
+			/*
 
+			Thing toReturn = pawn.StockUpThingToReturn();
 
 			if (toReturn == null)
 			{
@@ -90,6 +90,8 @@ namespace SmartMedicine
 			if (StoreUtility.TryFindBestBetterStoreCellFor(toReturn, pawn, pawn.Map, StoragePriority.Unstored, pawn.Faction, out IntVec3 dropLoc, true))
 				return new Job(SmartMedicineJobDefOf.StockDown, toReturn, dropLoc) { count = dropCount };
 			Log.Message($"{pawn} has nowhere to store {toReturn.LabelShort}");
+
+			*/
 			return null;
 		}
 	}
